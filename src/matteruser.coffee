@@ -52,6 +52,7 @@ class Matteruser extends Adapter
         mmHTTPPort = process.env.MATTERMOST_HTTP_PORT or null
         @mmNoReply = process.env.MATTERMOST_REPLY == 'false'
         @mmIgnoreUsers = process.env.MATTERMOST_IGNORE_USERS?.split(',') or []
+        mmHTTPProxy = process.env.http_proxy or null
 
         unless mmHost?
             @robot.logger.emergency "MATTERMOST_HOST is required"
@@ -66,7 +67,8 @@ class Matteruser extends Adapter
             @robot.logger.emergency "MATTERMOST_GROUP is required"
             process.exit 1
 
-        @client = new MatterMostClient mmHost, mmGroup, mmUser, mmPassword, {wssPort: mmWSSPort, httpPort: mmHTTPPort, pingInterval: 30000}
+        option = {wssPort: mmWSSPort, httpPort: mmHTTPPort, pingInterval: 30000, httpProxy: mmHTTPProxy}
+        @client = new MatterMostClient mmHost, mmGroup, mmUser, mmPassword, option
 
         @client.on 'open', @.open
         @client.on 'hello', @.onHello
@@ -211,7 +213,7 @@ class Matteruser extends Adapter
         user = @robot.brain.userForId mmPost.user_id
         user.room = mmPost.channel_id
         user.room_name = msg.data.channel_display_name
-        
+
         text = mmPost.message
         if msg.data.channel_type == 'D'
           if !///^@?#{@robot.name} ///i.test(text) # Direct message
